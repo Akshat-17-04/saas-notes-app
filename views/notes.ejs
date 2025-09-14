@@ -1,0 +1,89 @@
+<%- include("layout", { body: `
+<div class="notes-box">
+  <h3>Your Notes</h3>
+  <form id="noteForm">
+    <input type="text" name="content" placeholder="Write a note..." required />
+    <button type="submit">Add</button>
+  </form>
+  <p id="limitMsg" style="color: red"></p>
+  <ul id="notesList"></ul>
+  <button id="upgradeBtn" style="display: none">Upgrade to Pro</button>
+</div>
+
+<script>
+  const token = localStorage.getItem("token");
+  const tenant = localStorage.getItem("tenant");
+  const role = localStorage.getItem("role");
+  if (!token) window.location.href = "/login";
+
+  const notesList = document.getElementById("notesList");
+  const noteForm = document.getElementById("noteForm");
+  const upgradeBtn = document.getElementById("upgradeBtn");
+  const limitMsg = document.getElementById("limitMsg");
+
+  async function loadNotes() {
+    const res = await fetch("/api/notes", {
+      headers: { Authorization: "Bearer " + token },
+    });
+    const notes = await res.json();
+    notesList.innerHTML = "";
+    notes.forEach((n) => {
+      const li = document.createElement("li");
+      li.textContent = n.content;
+      const del = document.createElement("button");
+      del.textContent = "x";
+      del.onclick = async () => {
+        await fetch("/api/notes/" + n._id, {
+          method: "DELETE",
+          headers: { Authorization: "Bearer " + token },
+        });
+        loadNotes();
+      };
+      li.appendChild(del);
+      notesList.appendChild(li);
+    });
+
+    // Check note limit
+    if (notes.length >= 3) {
+      limitMsg.textContent = "Free plan limit reached!";
+      if (role === "ADMIN") upgradeBtn.style.display = "inline-block";
+    } else {
+      limitMsg.textContent = "";
+      upgradeBtn.style.display = "none";
+    }
+  }
+
+  noteForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const content = noteForm.content.value;
+    const res = await fetch("/api/notes", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token,
+      },
+      body: JSON.stringify({ content }),
+    });
+    if (res.ok) {
+      noteForm.reset();
+      loadNotes();
+    } else {
+      const data = await res.json();
+      limitMsg.textContent = data.message;
+    }
+  });
+
+  upgradeBtn.addEventListener("click", async () => {
+    const res = await fetch("/api/tenants/" + tenant + "/upgrade", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token },
+    });
+    if (res.ok) {
+      alert("Tenant upgraded to PRO!");
+      loadNotes();
+    }
+  });
+
+  loadNotes();
+</script>
+` }) %>

@@ -1,0 +1,36 @@
+<%- include("layout", { body: `
+<div class="login-box">
+  <h3>Login</h3>
+  <form id="loginForm">
+    <input type="email" name="email" placeholder="Email" required />
+    <input type="password" name="password" placeholder="Password" required />
+    <button type="submit">Login</button>
+  </form>
+  <p id="error" style="color: red"></p>
+</div>
+
+<script>
+  const form = document.getElementById("loginForm");
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = form.email.value;
+    const password = form.password.value;
+
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+
+    if (res.ok) {
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("tenant", data.user.tenant);
+      localStorage.setItem("role", data.user.role);
+      window.location.href = "/notes";
+    } else {
+      document.getElementById("error").textContent = data.message;
+    }
+  });
+</script>
+` }) %>
