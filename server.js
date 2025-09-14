@@ -31,7 +31,7 @@ app.get("/notes", (req, res) => res.render("notes"));
 
 // Health check
 app.get("/health", (req, res) => res.json({ status: "ok" }));
-
+module.exports = app;
 const PORT = process.env.PORT || 5000;
 if (require.main === module) {
   const PORT = process.env.PORT || 5000;
